@@ -7,7 +7,7 @@ import java.awt.event.*;
 /**
  * A simple click/stress game created by Mackansw as a school examination project.
  * @author Mackansw
- * @version 20.03.2
+ * @version 20.03.24
  * */
 
 public class Game {
