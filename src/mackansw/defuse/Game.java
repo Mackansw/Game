@@ -7,7 +7,7 @@ import java.awt.event.*;
 /**
  * A simple click/stress game created by Mackansw as a school examination project.
  * @author Mackansw
- * @version 20.02.2
+ * @version 20.03.2
  * */
 
 public class Game {
@@ -89,7 +89,7 @@ public class Game {
     });
 
     private Timer mousePressed = new Timer(700, e-> {
-        if(isKeyDown) {
+        if(useMouse & isKeyDown) {
             releaseBomb();
             stopMousePressed();
         }
@@ -188,16 +188,16 @@ public class Game {
     //Checks and updates basic game logic
     private void updateGameLogic() {
         if(playing) {
-            if(clicks == currentFinishLine) {
-                playing = false;
-                textureLabel.setIcon(bomb_defused);
-                System.out.println("Game won!");
-            }
             if(bombTimer == 0) {
                 playing = false;
                 textureLabel.setIcon(explosion);
                 recordLevel.setText(" | Level record " + getLevelRecord(currentLevel));
                 System.out.println("Game over!");
+            }
+            else if(clicks == currentFinishLine) {
+                playing = false;
+                textureLabel.setIcon(bomb_defused);
+                System.out.println("Game won!");
             }
             if(isAnimationRunning()) {
                 stopAnimation();
@@ -583,11 +583,11 @@ public class Game {
         }
 
         //Identifies a win or los
-        if(!playing & clicks == currentFinishLine) {
-            g.drawString("Bomb defused! Press ENTER to start next level.", arcX - 70 + splashX, arcY + 325);
-        }
         if(!playing & bombTimer == 0) {
             g.drawString("Bomb detonated! Press R to retry.", arcX - 10 + splashX, arcY + 325);
+        }
+        else if(!playing & clicks == currentFinishLine) {
+            g.drawString("Bomb defused! Press ENTER to start next level.", arcX - 70 + splashX, arcY + 325);
         }
 
         //Clicks counter
