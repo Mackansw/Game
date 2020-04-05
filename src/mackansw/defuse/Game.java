@@ -7,7 +7,7 @@ import java.awt.event.*;
 /**
  * A simple click/stress game created by Mackansw as a school examination project.
  * @author Mackansw
- * @version 20.03.24
+ * @version 20.04.05
  * */
 
 public class Game {
@@ -27,11 +27,17 @@ public class Game {
     private ImageIcon bomb_defused;
     private ImageIcon explosion;
 
-    //The thread that runs the bombTimer
-    private Thread bombTimerThread;
+    //The bomb fuse thread
+    private Thread fuseThread;
 
     //Game font
     private Font gameFont = new Font(Font.MONOSPACED, Font.BOLD, 17);
+
+    //Game foreground
+    private Color gameForeground = Color.cyan;
+
+    //Game background
+    private Color gameBackground = Color.darkGray.darker();
 
     //Returns the games current fps
     private int fps = 0;
@@ -45,6 +51,7 @@ public class Game {
     //Returns the current level ingame
     private int currentLevel = 1;
 
+    //The players level record
     private int levelRecord = 0;
 
     //The bombs bounds
@@ -56,8 +63,8 @@ public class Game {
     //Returns how many clicks the player needs to win the current level
     private int currentFinishLine = 30, lastFinishLine = 0;
 
-    //Bomb timer variables
-    private int bombTimer = 0, resetBombTimer = 0, lastBombTimer = 0;
+    //Fuse variables
+    private int fuse = 0, resetFuse = 0, lastFuse = 0;
 
     //Returns if the game is running in debug mode
     private boolean debugMode = false;
@@ -88,6 +95,7 @@ public class Game {
         gamePanel.repaint();
     });
 
+    //Resets the bombs position when pressed by mouse
     private Timer mousePressed = new Timer(700, e-> {
         if(useMouse & isKeyDown) {
             releaseBomb();
@@ -96,21 +104,21 @@ public class Game {
     });
 
     /**
-     * Game constructor with enableDebugMode and setBombTimer parameters
+     * Game constructor with enableDebugMode and fuse parameters
      * @param enableDebugMode Returns if the game should be started in debug-mode
-     * @param setBombTimer the bomb-timers start-value
+     * @param fuse the bombs fuse
      */
-    private Game(String enableDebugMode, int setBombTimer) {
+    private Game(String enableDebugMode, int fuse) {
 
         //Checks if debugMode is enabled
         if(enableDebugMode.equals("enableDebugMode")) {
             debugMode = true;
         }
 
-        //Sets the startValue of the bomb timer and saves it to a reset-timer
-        bombTimer = setBombTimer;
-        resetBombTimer = setBombTimer;
-        lastBombTimer = setBombTimer;
+        //Sets the startValue of the fuse and saves it to a reset-fuse
+        this.fuse = fuse;
+        this.resetFuse = fuse;
+        this.lastFuse = fuse;
 
         //Saves the finishLine to a reset variable
         lastFinishLine = currentFinishLine;
@@ -155,7 +163,7 @@ public class Game {
 
     //Returns if the game is over
     private boolean isGameOver() {
-        return bombTimer == 0 || clicks == currentFinishLine;
+        return this.fuse == 0 || clicks == currentFinishLine;
     }
 
     //GameLoop
@@ -188,10 +196,10 @@ public class Game {
     //Checks and updates basic game logic
     private void updateGameLogic() {
         if(playing) {
-            if(bombTimer == 0) {
+            if(this.fuse == 0) {
                 playing = false;
                 textureLabel.setIcon(explosion);
-                recordLevel.setText(" | Level record " + getLevelRecord(currentLevel));
+                recordLevel.setText(" | Level record: " + getLevelRecord(currentLevel));
                 System.out.println("Game over!");
             }
             else if(clicks == currentFinishLine) {
@@ -215,23 +223,23 @@ public class Game {
         }
     }
 
-    //Starts the bombs timer and the bombTimerThread when called
-    private void startBombTimer(int timer) {
+    //Starts the fuseThread and the fuse when called
+    private void plantBomb(int currentFuse) {
         playing = true;
-        bombTimerThread = new Thread() {
+        fuseThread = new Thread() {
 
             @Override
             public void run() {
                 super.run();
 
-                //Returns how often the bomb timer should count down by dividing the current timer by 360 (360 = full arc)
-                int timerInterval = 360 / timer;
+                //Returns how often the fuse should count down by dividing the current fuse by 360 (360 = full arc)
+                int fuseInterval = 360 / currentFuse;
 
-                //Returns how fast the bombs timer should count down
-                int sleepTime = timer * 2 + 6;
+                //Returns how fast the fuse should count down
+                int sleepTime = currentFuse * 2 + 6;
 
-                //Keeps track of when the bomb timer last counted down
-                int timerCheckpoint = 0;
+                //Keeps track of when the fuse last counted down
+                int fuseCheckpoint = 0;
 
                 for(int i = 361; arcStart < i; arcStart++) {
 
@@ -244,22 +252,22 @@ public class Game {
                         }
                     }
 
-                    //Sleeps X seconds before counting down to achieve the right timer speed
+                    //Sleeps X seconds before counting down to achieve the right fuse speed
                     try {
                         sleep(sleepTime);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 
-                    //Makes the bomb timer count down every time the bomb arc reaches a checkpoint
-                    if(arcStart - timerCheckpoint == timerInterval) {
-                        //Prints the timer if debug mode is enabled
+                    //Makes the fuse count down every time the bomb arc reaches a checkpoint
+                    if(arcStart - fuseCheckpoint == fuseInterval) {
+                        //Prints the fuse value if debug mode is enabled
                         if(debugMode) {
-                            System.out.println(bombTimer);
+                            System.out.println(fuse);
                         }
 
-                        bombTimer--;
-                        timerCheckpoint += timerInterval;
+                        fuse--;
+                        fuseCheckpoint += fuseInterval;
                     }
 
                     //Kills the loop when the game is over
@@ -273,7 +281,7 @@ public class Game {
         };
 
         //Starts thread
-        bombTimerThread.start();
+        fuseThread.start();
     }
 
     //Shrinks the bomb when the player presses it to get clicks
@@ -309,16 +317,16 @@ public class Game {
         return levelRecord;
     }
 
-    //Sets timer before math
-    private int calculateNextTimer() {
-        if(lastBombTimer > 5) {
-            bombTimer = lastBombTimer - 1;
-            lastBombTimer = bombTimer;
+    //Sets the fuse before math
+    private int calculateNextFuse() {
+        if(this.lastFuse > 5) {
+            this.fuse = this.lastFuse - 1;
+            this.lastFuse = this.fuse;
         }
         else {
-            bombTimer = 5;
+            this.fuse = 5;
         }
-        return bombTimer;
+        return this.fuse;
     }
 
     //Creates and shows the game window when called
@@ -340,49 +348,49 @@ public class Game {
             }
         };
         gamePanel.setLayout(new BorderLayout());
-        gamePanel.setBackground(Color.darkGray.darker());
+        gamePanel.setBackground(gameBackground);
 
         //Declares textures
-        bomb = new ImageIcon(new ImageIcon(getClass().getResource("Bomb.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
-        bomb_shrinked = new ImageIcon(new ImageIcon(getClass().getResource("Bomb.png")).getImage().getScaledInstance(shrinkedBombWidth, shrinkedBombHeight, Image.SCALE_DEFAULT));
-        bomb_defused = new ImageIcon(new ImageIcon(getClass().getResource("Bomb_defused.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
-        explosion = new ImageIcon(new ImageIcon(getClass().getResource("Explosion.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
+        bomb = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_easter.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
+        bomb_shrinked = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_easter.png")).getImage().getScaledInstance(shrinkedBombWidth, shrinkedBombHeight, Image.SCALE_DEFAULT));
+        bomb_defused = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_defused_easter.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
+        explosion = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Explosion.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
 
         textureLabel = new JLabel(bomb, JLabel.CENTER);
         gamePanel.add(textureLabel);
 
         fpsCounter = new JLabel(fps + " Fps ", JLabel.RIGHT);
         gamePanel.add(fpsCounter, BorderLayout.NORTH);
-        fpsCounter.setForeground(Color.cyan);
+        fpsCounter.setForeground(gameForeground);
         fpsCounter.setFont(gameFont);
 
         buttomText = new JPanel();
         gamePanel.add(buttomText, BorderLayout.SOUTH);
         buttomText.setLayout(new GridLayout(1,2));
-        buttomText.setBackground(gamePanel.getBackground());
+        buttomText.setBackground(gameBackground);
 
         levelStats = new JPanel();
         buttomText.add(levelStats);
-        levelStats.setBackground(gamePanel.getBackground());
+        levelStats.setBackground(gameBackground);
         levelStats.setLayout(new BorderLayout());
 
         levelCounter = new JLabel("Level " + currentLevel);
         levelStats.add(levelCounter, BorderLayout.WEST);
-        levelCounter.setForeground(Color.cyan);
+        levelCounter.setForeground(gameForeground);
         levelCounter.setFont(gameFont);
 
         recordLevel = new JLabel();
         levelStats.add(recordLevel);
-        recordLevel.setForeground(Color.cyan);
+        recordLevel.setForeground(gameForeground);
         recordLevel.setFont(gameFont);
 
         debugTag = new JLabel("Debug mode ", JLabel.RIGHT);
         buttomText.add(debugTag);
-        debugTag.setForeground(Color.cyan);
+        debugTag.setForeground(gameForeground);
         debugTag.setFont(gameFont);
         debugTag.setVisible(debugMode);
 
-        //Relocates time arc when the window is resized
+        //Re-centers the time arc when the window is resized
         window.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -403,7 +411,7 @@ public class Game {
                 if(e.getKeyCode() == e.VK_ENTER) {
                     if(startScreen) {
                         startScreen = false;
-                        startBombTimer(bombTimer);
+                        plantBomb(fuse);
                     }
                 }
 
@@ -434,7 +442,7 @@ public class Game {
                         clicks = currentFinishLine;
                     }
                     if(e.getKeyCode() == e.VK_L) {
-                        bombTimer = 0;
+                        fuse = 0;
                         arcStart = 360;
                     }
                 }
@@ -465,7 +473,7 @@ public class Game {
 
                 //Respawn function
                 if(e.getKeyCode() == e.VK_R) {
-                    if(!playing & bombTimer == 0) {
+                    if(!playing & fuse == 0) {
                         arcStart = 0;
                         clicks = 0;
                         currentLevel = 1;
@@ -473,10 +481,9 @@ public class Game {
                         lastFinishLine = currentFinishLine;
                         levelCounter.setText("Level " + currentLevel);
                         textureLabel.setIcon(bomb);
-                        bombTimer = resetBombTimer;
-                        lastBombTimer = resetBombTimer;
-
-                        startBombTimer(bombTimer);
+                        fuse = resetFuse;
+                        lastFuse = resetFuse;
+                        plantBomb(fuse);
                     }
                 }
 
@@ -486,14 +493,11 @@ public class Game {
                         currentLevel++;
                         clicks = 0;
                         arcStart = 0;
-
                         currentFinishLine = lastFinishLine + 10;
                         lastFinishLine = currentFinishLine;
-
                         textureLabel.setIcon(bomb);
                         levelCounter.setText("Level " + currentLevel);
-
-                        startBombTimer(calculateNextTimer());
+                        plantBomb(calculateNextFuse());
                     }
                 }
             }
@@ -553,7 +557,7 @@ public class Game {
 
         //Styles game
         g.setFont(gameFont);
-        g.setColor(Color.cyan);
+        g.setColor(gameForeground);
 
         //Game-information
         g.drawString("Press M to enable the mouse!", 5, 35);
@@ -568,7 +572,7 @@ public class Game {
             g.drawString("Press SPACE to get clicks!", 5, 15);
         }
 
-        //Draws the bombTimers arc
+        //Draws the fuse arc
         g.drawArc(arcX, arcY, 300, 300, 0, arcStart);
 
         //Game status
@@ -579,11 +583,11 @@ public class Game {
             g.drawString("Game Paused!", arcX + 90, arcY + 325);
         }
         else if (playing & !startScreen) {
-            g.drawString("Time left: " + bombTimer, arcX + 90, arcY + 325);
+            g.drawString("Time left: " + this.fuse, arcX + 90, arcY + 325);
         }
 
         //Identifies a win or los
-        if(!playing & bombTimer == 0) {
+        if(!playing & this.fuse == 0) {
             g.drawString("Bomb detonated! Press R to retry.", arcX - 10 + splashX, arcY + 325);
         }
         else if(!playing & clicks == currentFinishLine) {
