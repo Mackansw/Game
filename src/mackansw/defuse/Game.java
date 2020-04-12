@@ -224,7 +224,7 @@ public class Game {
     }
 
     //Starts the fuseThread and the fuse when called
-    private void plantBomb(int currentFuse) {
+    private void startFuseThread(int currentFuse) {
         playing = true;
         fuseThread = new Thread() {
 
@@ -351,9 +351,9 @@ public class Game {
         gamePanel.setBackground(gameBackground);
 
         //Declares textures
-        bomb = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_easter.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
-        bomb_shrinked = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_easter.png")).getImage().getScaledInstance(shrinkedBombWidth, shrinkedBombHeight, Image.SCALE_DEFAULT));
-        bomb_defused = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_defused_easter.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
+        bomb = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
+        bomb_shrinked = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb.png")).getImage().getScaledInstance(shrinkedBombWidth, shrinkedBombHeight, Image.SCALE_DEFAULT));
+        bomb_defused = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Bomb_defused.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
         explosion = new ImageIcon(new ImageIcon(getClass().getResource("/resources/Explosion.png")).getImage().getScaledInstance(bombWidth, bombHeight, Image.SCALE_DEFAULT));
 
         textureLabel = new JLabel(bomb, JLabel.CENTER);
@@ -411,7 +411,7 @@ public class Game {
                 if(e.getKeyCode() == e.VK_ENTER) {
                     if(startScreen) {
                         startScreen = false;
-                        plantBomb(fuse);
+                        startFuseThread(fuse);
                     }
                 }
 
@@ -483,7 +483,7 @@ public class Game {
                         textureLabel.setIcon(bomb);
                         fuse = resetFuse;
                         lastFuse = resetFuse;
-                        plantBomb(fuse);
+                        startFuseThread(fuse);
                     }
                 }
 
@@ -497,7 +497,7 @@ public class Game {
                         lastFinishLine = currentFinishLine;
                         textureLabel.setIcon(bomb);
                         levelCounter.setText("Level " + currentLevel);
-                        plantBomb(calculateNextFuse());
+                        startFuseThread(calculateNextFuse());
                     }
                 }
             }
